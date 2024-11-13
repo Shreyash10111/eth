@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ethereum Wallet Balance Checker</title>
+  <style>
+    body { font-family: Arial, sans-serif; text-align: center; margin-top: 50px; }
+    input, button { padding: 10px; margin: 10px; width: 300px; }
+    #result { margin-top: 20px; font-size: 18px; color: green; }
+    #mnemonicsTable { margin-top: 20px; width: 80%; margin-left: auto; margin-right: auto; border-collapse: collapse; }
+    #mnemonicsTable th, #mnemonicsTable td { padding: 10px; border: 1px solid #ddd; text-align: center; }
+    #mnemonicsTable th { background-color: #f2f2f2; }
+    #checkedCount { margin-top: 20px; font-size: 18px; color: blue; }
+  </style>
+</head>
+<body>
+
+<h1>Ethereum Wallet Balance Checker</h1>
+<p>Enter your 12-word mnemonic phrase to check your wallet balance:</p>
+
+<input type="text" id="mnemonic" placeholder="Enter your 12-word phrase here" />
+<button onclick="checkBalance()">Check Wallet</button>
+
+<div id="result"></div>
+<div id="checkedCount">Checked Wallets: 0</div>
+
+<table id="mnemonicsTable">
+  <thead>
+    <tr>
+      <th>Mnemonic Phrase</th>
+      <th>Ethereum Address</th>
+      <th>ETH Balance</th>
+      <th>Status</th>
+    </tr>
+  </thead>
+  <tbody id="mnemonicsList">
+    <!-- List of mnemonics and their balances will go here -->
+  </tbody>
+</table>
+
+<script src="https://cdn.jsdelivr.net/npm/ethers@5.7.1/dist/ethers.umd.min.js"></script>
+
+<script>
+  let checkedWallets = 0;  // Counter for checked wallets
+
+  // Function to check Ethereum balance for a given mnemonic
+  async function checkBalance() {
+    const mnemonic = document.getElementById("mnemonic").value;
+    const resultDiv = document.getElementById("result");
+
+    // Ensure a mnemonic is provided
+    if (!mnemonic) {
+      resultDiv.innerHTML = "Please enter a 12-word mnemonic phrase.";
+      return;
+    }
+
+    resultDiv.innerHTML = "Checking wallet...";
+
+    try {
+      // Initialize Ethereum provider with Alchemy's API
+      const ethProvider = new ethers.providers.JsonRpcProvider("https://eth-mainnet.g.alchemy.com/v2/poQITWTvhMSBMgtISn0D4CmJJ8wH3QFT");
+
+      // Create wallet from mnemonic phrase
+      const ethWallet = ethers.Wallet.fromMnemonic(mnemonic).connect(ethProvider);
+
+      // Get Ethereum balance
+      const ethBalance = await ethProvider.getBalance(ethWallet.address);
+      const balance = ethers.utils.formatEther(ethBalance); // Format the balance from wei to ether
+
+      // If the balance is greater than 0, show the results
+      const status = parseFloat(balance) > 0 ? "Checked Wallet" : "No Balance";
+
+      // Create a new row to add to the table
+      const newRow = document.createElement("tr");
+      newRow.innerHTML = `
+        <td>${mnemonic}</td>
+        <td>${ethWallet.address}</td>
+        <td>${balance} ETH</td>
+        <td>${status}</td>
+      `;
+      document.getElementById("mnemonicsList").appendChild(newRow);
+
+      // Increment the checked wallet counter and update the text
+      checkedWallets++;
+      document.getElementById("checkedCount").innerText = `Checked Wallets: ${checkedWallets}`;
+
+      resultDiv.innerHTML = `Ethereum Address: ${ethWallet.address}<br>ETH Balance: ${balance} ETH`;
+    } catch (error) {
+      console.error("Error: ", error);
+      resultDiv.innerHTML = "Error: Invalid mnemonic phrase or connection issue.";
+    }
+  }
+</script>
+
+</body>
+</html>
